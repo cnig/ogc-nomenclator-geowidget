@@ -35,16 +35,17 @@ conwet.Gadget = Class.create({
 
         this.searchTextSlot    = new conwet.events.Slot('search_text_slot', function(text) {
             this.searchInput.value = text;
-            this._sendSearchRequest(this.serviceSelect.getValue(), this.searchInput.value);
+            this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value);
         }.bind(this));
 
         this.wfsServiceSlot   = new conwet.events.Slot('wfs_service_slot', function(service) {
             service = JSON.parse(service);
             if (typeof service == 'object') {
                 if (('type' in service) && ('url' in service) && ('service_type' in service) && ('name' in service) && (service.type == "WFS") && (service.url != "")) {
-                    this.addWfsService(service, true);
-                    this.showMessage(_("Se ha recibido un nuevo servidor."));
-                    this.save();
+                    if(this.addWfsService(service, true)){
+                        this.showMessage(_("Se ha recibido un nuevo servidor."));
+                        this.save();
+                    }
                 }
             }
         }.bind(this));
@@ -69,6 +70,7 @@ conwet.Gadget = Class.create({
 
         this.serviceSelect = new StyledElements.StyledSelect({"onChange": function(){}});
         this.serviceSelect.addClassName("service");
+        this.serviceSelect.textDiv.hide();
         this.serviceSelect.insertInto(header);
 
         this.serviceSelect.addEntries([{label: _('Select a server'), value: ''}]);
@@ -101,24 +103,43 @@ conwet.Gadget = Class.create({
             "value"     : _("Buscar"),
             "onClick"   : function(e) {
                 this.sendSearch(this.searchInput.value);
-                this._sendSearchRequest(this.serviceSelect.getValue(), this.searchInput.value);
+                this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value);
             }.bind(this)
         });
         header.appendChild(searchButton);
 
     },
 
+    /*
+     * This functions adds a WFS service to the select. If added, returns true, othrewise returns false.
+     */
     addWfsService: function(service, selected) {
-        this.serviceSelect.addEntries([{label: service.name, value: service, selected: selected}]);
+        var serviceJson = JSON.stringify(service);
+        
+        //Add it if it already isn't in the select
+        if(!(serviceJson in this.serviceSelect.optionValues)){
+            this.serviceSelect.addEntries([{label: service.name, value: serviceJson}]);
+            if(selected)
+                this.serviceSelect.setValue(serviceJson);
+            
+            return true;
+        }
+        
+        return false;
     },
 
+    /*
+     * This function saves the service list
+     */
     save: function() {
-        var options = this.serviceSelect.options;
+        var options = this.serviceSelect.optionValues;
         var services = [];
-        for (var i=0; i<options.length; i++) {
-            var service = options[i].getValue();
-            if (service != "") {
-                services.push(service);
+        if(options != null){
+            for (var i=0; i<options.length; i++) {
+                var service = options[i].getValue();
+                if (service != "") {
+                    services.push(service);
+                }
             }
         }
         this.servicesPreference.set(JSON.stringify(services));
@@ -169,7 +190,7 @@ conwet.Gadget = Class.create({
 
  	//var format = new OpenLayers.Format.CSWGetFeatures();	 
         //var result = format.write(options);
-        var peticion = 'http://www.idee.es/IDEE-WFS-Nomenclator-NGC/services';
+        //var peticion = 'http://www.idee.es/IDEE-WFS-Nomenclator-NGC/services';
         var parameters = {
             "SERVICE": "WFS",
             "VERSION": "1.1.0",
@@ -179,11 +200,13 @@ conwet.Gadget = Class.create({
             "TYPENAME": "mne:Entidad",
             "FILTER": '<Filter xmlns:mne="http://www.idee.es/mne"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>mne:nombreEntidad/mne:NombreEntidad/mne:nombre</PropertyName><Literal>*'+word+'*</Literal></PropertyIsLike></Filter>'
         };
-        //&sourceTitle=Nomenclux00E1torux0020EuroGeonames
+        
+        //http://www.cartociudad.es/wfs-codigo/services?&SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&MAXFEATURES=100&NAMESPACE=xmlns(app=http://www.deegree.org/app)&TYPENAME=app:Entidad&FILTER=<Filter xmlns:app="http://www.deegree.org/app"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>nombreEntidad_nombre</PropertyName><Literal>*28035*</Literal></PropertyIsLike></Filter>
+
 
         this.showMessage("Solicitando datos al servidor.", true);
         //TODO Gif chulo para esperar
-        MashupPlatform.http.makeRequest(peticion, {
+        MashupPlatform.http.makeRequest(baseURL, {
             method: 'GET',
             parameters: parameters,
             onSuccess: function(transport) {
@@ -211,7 +234,7 @@ conwet.Gadget = Class.create({
         var entities = oDOM.documentElement.children;
 
         for (var i=1; i<nEntities; i++) {
-            var entity = entities[i];
+            var entity = entities[i].getElementsByTagName("mne:Entidad")[0];
 
             var div = document.createElement("div");
             $(div).addClassName("feature");
@@ -244,7 +267,7 @@ conwet.Gadget = Class.create({
 
             var type = document.createElement("span");
             $(type).addClassName("type");
-            type.innerHTML = " (" +entity.getElementsByTagName("mne:nombreEntidad")[0].getElementsByTagName("mne:tipo")[0].innerHTML + ")";
+            type.innerHTML = " (" +entity.getElementsByTagName("mne:tipoEntidad")[0].getElementsByTagName("mne:tipo")[0].innerHTML + ")";
             div.appendChild(type);
 
             $("list").appendChild(div);
@@ -265,7 +288,8 @@ conwet.Gadget = Class.create({
     },
 
     _showDetails: function(entity) {
-        $("info").innerHTML = "einggg??"; //this._decodeASCII(json[1].metadataHTML);
+        $("info").innerHTML = ""; //this._decodeASCII(json[1].metadataHTML);
+        $("info").appendChild(this._entityToHtml(entity));
 
         var srs      = entity.getElementsByTagName("mne:posicionEspacial")[0].getElementsByTagName("gml:Point")[0].getAttribute("srsName");
         var location = entity.getElementsByTagName("mne:posicionEspacial")[0].getElementsByTagName("gml:Point")[0].getElementsByTagName("gml:pos")[0].innerHTML.split(" ", 2);
@@ -281,6 +305,7 @@ conwet.Gadget = Class.create({
             location = this.transformer.advancedTransform(location, srs, this.transformer.DEFAULT.projCode);
         }
 
+        //Send the location and location info (location + name)
         this.sendLocation(location.lon, location.lat);
         this.sendLocationInfo(location.lon, location.lat, entity.getElementsByTagName("mne:nombreEntidad")[0].getElementsByTagName("mne:nombre")[0].innerHTML);
 
@@ -299,6 +324,181 @@ conwet.Gadget = Class.create({
                 this.sendText(e.target.innerHTML);
             }.bind(this));
         }
+    },
+    
+    /*
+     * This functions parses a feature DOM to an styled HTML
+     */
+    _entityToHtml: function(entity){
+        var html = document.createElement("div");
+        html.className = "featureContainer"
+        
+        var headDiv, fieldsDiv;
+        
+        //Info with the elements to show in the parsed html
+        var parseInfo = [
+            
+            { 
+                text : _("NombreEntidad"), 
+                fields : [{
+                    text : _("Nombre"),
+                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:nombre"
+                },
+                {
+                    text : _("Idioma"),
+                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:idioma"
+                },
+                {
+                    text : _("ClaseNombre"),
+                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:claseNombre"
+                },
+                {
+                    text : _("Estatus"),
+                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:estatus"
+                },
+                {
+                    text : _("Fuente"),
+                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:fuente"
+                }
+                ]
+            },
+            { 
+                text : _("TipoEntidad"), 
+                fields : [{
+                    text : _("Tipo"),
+                    path : "mne:tipoEntidad/mne:TipoEntidad/mne:tipo"
+                },
+                {
+                    text : _("CatalogoEntidades"),
+                    path : "mne:tipoEntidad/mne:TipoEntidad/mne:catalogoEntidades"
+                }
+                ]
+            },
+            { 
+                text : _("PosicionEspacial"), 
+                fields : [{
+                    text : _("Posicion"),
+                    path : "mne:posicionEspacial/mne:PosicionEspacial/mne:geometria/gml:Point/gml:pos"
+                },
+                {
+                    text : _("SRS"),
+                    path : "mne:posicionEspacial/mne:PosicionEspacial/mne:geometria/gml:Point",
+                    attribute : "srsName"
+                }
+                ]
+            },
+            { 
+                text : _("EntidadLocal"), 
+                fields : [{
+                    text : _("ComunidadAutonoma"),
+                    path : "mne:entidadLocal/mne:EntidadLocal/mne:comunidadAutonoma"
+                },
+                {
+                    text : _("Provincia"),
+                    path : "mne:entidadLocal/mne:EntidadLocal/mne:provincia"
+                }
+                ]
+            },
+            { 
+                text : _("Codificacion"), 
+                fields : [{
+                    text : _("Codigo"),
+                    path : "mne:codificacion/mne:Codificacion/mne:codigo"
+                },
+                {
+                    text : _("SistemaCodificacion"),
+                    path : "mne:codificacion/mne:Codificacion/mne:sistemaCodificacion"
+                }
+                ]
+            },
+            { 
+                text : _("Mapa"), 
+                fields : [{
+                    text : _("Serie"),
+                    path : "mne:mapa/mne:Mapa/mne:serie"
+                },
+                {
+                    text : _("Hoja"),
+                    path : "mne:mapa/mne:Mapa/mne:hoja"
+                }
+                ]
+            }            
+        ]; 
+        
+        
+        //Iterate through sections
+        for(var x = 0; x < parseInfo.length; x++){
+            
+            var head = parseInfo[x].text;
+            
+            headDiv = document.createElement("div");
+            fieldsDiv = document.createElement("div");
+            
+            headDiv.className = "featureHead";
+            fieldsDiv.className = "featureFieldsContainer";
+            
+            headDiv.innerHTML = head;
+            var fields = parseInfo[x].fields;
+            
+            //Iterate through section fields
+            for(var y = 0; y < fields.length; y++){
+                
+                var field = fields[y];
+                
+                var entryValue = this._getDOMValue(entity, field.path, field.attribute);
+                
+                //Create something like:
+                // <div class="field"><div class="fieldName"></div><div class="fieldValue"></div></div>
+                if(entryValue != null){
+                    var fieldDiv = document.createElement("div");
+                    var nameDiv = document.createElement("div");
+                    var valueDiv = document.createElement("div");
+                    
+                    fieldDiv.className = "fieldContainer";
+                    nameDiv.className = "fieldName";
+                    nameDiv.innerHTML = field.text;
+                    valueDiv.className = "fieldValue";
+                    valueDiv.innerHTML = entryValue;
+                    
+                    fieldDiv.appendChild(nameDiv);
+                    fieldDiv.appendChild(valueDiv);
+                    
+                    fieldsDiv.appendChild(fieldDiv);
+                }
+            }
+            
+            html.appendChild(headDiv);
+            html.appendChild(fieldsDiv);
+            
+        }
+        
+        return html;
+       
+    },
+    
+    /*
+     * This function get a DOM object and an element path and returns its value.
+     * Is attribute is set, it return that attribute. Otherwise, returns the innerHTML.
+     */        
+    _getDOMValue: function(DOM, element, attribute){
+        try{
+            var path = element.split('/');
+            var temp = DOM;
+            for(var x =  0; x < path.length; x++){
+                var b = temp.getElementsByTagName(path[x]);
+                temp = b[0];
+                //temp = (temp.getElementsByTagName(path[subElement]))[0];
+            }
+            
+            if(attribute != null)
+                return temp.getAttribute(attribute);
+            else
+                return temp.innerHTML;
+            
+        }catch(e){
+            return null
+        };
+
     },
 
     _clearDetails: function() {
