@@ -23,7 +23,7 @@
  */
 use("conwet");
 
-conwet.WFSController = Class.create({
+conwet.GeoNamesController = Class.create({
     
     initialize: function(gadget){
         this.gadget = gadget;
@@ -49,19 +49,12 @@ conwet.WFSController = Class.create({
 
  	//var format = new OpenLayers.Format.CSWGetFeatures();	 
         //var result = format.write(options);
-        //var peticion = 'http://www.idee.es/IDEE-WFS-Nomenclator-NGC/services';
         var parameters = {
-            "SERVICE": "WFS",
-            "VERSION": "1.1.0",
-            "REQUEST": "GetFeature",
-            "MAXFEATURES": "100",
-            "NAMESPACE": this.gadget.serviceConfiguration.request[0].namespace[0].Text,
-            "TYPENAME": this.gadget.serviceConfiguration.request[0].typename[0].Text,
-            "FILTER": this.gadget.serviceConfiguration.request[0].filter[0].Text.replace("{{word}}", word).replace("{{property}}", property)
-        };
-        
-        //http://www.cartociudad.es/wfs-codigo/services?&SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&MAXFEATURES=100&NAMESPACE=xmlns(app=http://www.deegree.org/app)&TYPENAME=app:Entidad&FILTER=<Filter xmlns:app="http://www.deegree.org/app"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>nombreEntidad_nombre</PropertyName><Literal>*28035*</Literal></PropertyIsLike></Filter>
-
+            "q": word,
+            "maxRows": this.gadget.serviceConfiguration.request[0].maxrows[0].Text,
+            "lang": this.gadget.serviceConfiguration.request[0].lang[0].Text,
+            "username": this.gadget.serviceConfiguration.request[0].username[0].Text
+            };
 
         this.gadget.showMessage("Solicitando datos al servidor.", true);
         //TODO Gif chulo para esperar
@@ -85,26 +78,14 @@ conwet.WFSController = Class.create({
     _drawEntities: function(xmlObject) {
         this.gadget.clearUI();
         
-        //Get the features typename (without the prefix)
-        var configTypename = this.gadget.serviceConfiguration.request[0].typename[0].Text;
-        var pos = configTypename.indexOf(":");
-        var typename;
-        if(pos >= 0)
-            typename = configTypename.substring(pos+1);
-        
-        else
-            typename = configTypename;
-        
-        
-        
-        var entities = xmlObject.featureMember;
+        var entities = xmlObject.geoname;
         var nEntities = entities.length;
         
         if(nEntities < 1)
             return;
         
         for (var i=0; i<nEntities; i++) {
-            var entity = entities[i][typename][0];
+            var entity = entities[i];
 
             var div = document.createElement("div");
             $(div).addClassName("feature");
@@ -169,17 +150,19 @@ conwet.WFSController = Class.create({
         $("info").innerHTML = ""; 
         $("info").appendChild(this._entityToHtml(entity));
         
-        var srsConfig = this.gadget.serviceConfiguration.results[0].srs[0];
-        var srs      = this._getDOMValue(entity, srsConfig);
-        var locationConfig = this.gadget.serviceConfiguration.results[0].location[0];
-        var location = this._getDOMValue(entity, locationConfig).split(" ", 2);
+        //var srsConfig = this.gadget.serviceConfiguration.results[0].srs[0];
+        //var srs      = this._getDOMValue(entity, srsConfig);
+        var latitudeConfig = this.gadget.serviceConfiguration.results[0].lat[0];
+        var longitudeConfig = this.gadget.serviceConfiguration.results[0].lat[0];
+        var latitude = this._getDOMValue(entity, latitudeConfig);
+        var longitude = this._getDOMValue(entity, longitudeConfig);
         var locationInfoConfig = this.gadget.serviceConfiguration.results[0].locationInfo[0];
         var locationInfo = this._getDOMValue(entity, locationInfoConfig);
 
-        location = new OpenLayers.LonLat(location[0], location[1]);
-        if (srs && (srs != "")) {
+        var location = new OpenLayers.LonLat(longitude, latitude);
+        /*if (srs && (srs != "")) {
             location = this.gadget.transformer.advancedTransform(location, srs, this.gadget.transformer.DEFAULT.projCode);
-        }
+        }*/
 
         //Send the location and location info (location + name)
         this.gadget.sendLocation(location.lon, location.lat);
