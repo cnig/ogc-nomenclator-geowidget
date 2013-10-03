@@ -27,7 +27,7 @@ use("conwet");
 conwet.Gadget = Class.create({
 
     initialize: function() {
-        // EzWeb variables
+        
         this.locationInfoEvent = new conwet.events.Event('location_info_event');
         this.locationEvent     = new conwet.events.Event('location_event');
         this.outputTextEvent   = new conwet.events.Event('output_text_event');
@@ -35,18 +35,17 @@ conwet.Gadget = Class.create({
 
         this.searchTextSlot    = new conwet.events.Slot('search_text_slot', function(text) {
             this.searchInput.value = text;
-            this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value);
+            this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value, this.propertySelect.getValue());
         }.bind(this));
 
+        this.serviceConfiguration = null; //Contains the configuration of the service in use
+        this.serviceConfigurationList = []; //Contains the configuration of all the services
+        
         this.wfsServiceSlot   = new conwet.events.Slot('wfs_service_slot', function(service) {
             service = JSON.parse(service);
-            if (typeof service == 'object') {
-                if (('type' in service) && ('url' in service) && ('service_type' in service) && ('name' in service) && (service.type == "WFS") && (service.url != "")) {
-                    if(this.addWfsService(service, true)){
-                        this.showMessage(_("Se ha recibido un nuevo servidor."));
-                        this.save();
-                    }
-                }
+
+            if ((typeof service == 'object') && ('type' in service) && ('url' in service) && ('service_type' in service) && ('name' in service) && (service.type == "WFS") && (service.url != "")) {
+                this.addWfsService(service, true);
             }
         }.bind(this));
 
@@ -68,7 +67,10 @@ conwet.Gadget = Class.create({
         serviceLabel.appendChild(document.createTextNode(_("Servicio WFS:")));
         header.appendChild(serviceLabel);
 
-        this.serviceSelect = new StyledElements.StyledSelect({"onChange": function(){}});
+        //Service selector
+        this.serviceSelect = new StyledElements.StyledSelect({"onChange": function(){
+                this.setWfsService(JSON.parse(this.serviceSelect.getValue()));
+        }});
         this.serviceSelect.addClassName("service");
         this.serviceSelect.textDiv.hide();
         this.serviceSelect.insertInto(header);
@@ -88,10 +90,21 @@ conwet.Gadget = Class.create({
         searchLabel.appendChild(document.createTextNode(_("Topónimo:")));
         header.appendChild(searchLabel);
 
+        //Select with the properties that can be used to search in this service
+        this.propertySelect = new StyledElements.StyledSelect({"onChange": function(){}});
+        this.propertySelect.textDiv.hide();
+        //this.propertySelect.addClassName("search"); TEMPORAL!!
+        this.propertySelect.addClassName("hidden"); //TEMPORAL!!
+        this.propertySelect.addEntries([{label: _('Search by'), value: ''}]);
+        this.propertySelect.insertInto(header);
+        
+        //$(this.propertySelect).hide(); //Temporal
+        
         var searchDiv = document.createElement("div");
         $(searchDiv).addClassName("search");
         header.appendChild(searchDiv);
-
+        
+        //Text input containing the text to be searched
         this.searchInput = document.createElement("input");
         this.searchInput.type = "text";
         $(this.searchInput).addClassName("search");
@@ -103,7 +116,7 @@ conwet.Gadget = Class.create({
             "value"     : _("Buscar"),
             "onClick"   : function(e) {
                 this.sendSearch(this.searchInput.value);
-                this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value);
+                this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value, this.propertySelect.getValue());
             }.bind(this)
         });
         header.appendChild(searchButton);
@@ -118,14 +131,52 @@ conwet.Gadget = Class.create({
         
         //Add it if it already isn't in the select
         if(!(serviceJson in this.serviceSelect.optionValues)){
-            this.serviceSelect.addEntries([{label: service.name, value: serviceJson}]);
-            if(selected)
-                this.serviceSelect.setValue(serviceJson);
-            
-            return true;
+            //Load the configuration of the service
+            new Ajax.Request(servicesAssociations[service.url], {
+                method: 'GET',
+                onSuccess: function(transport) {
+
+                    var configuration = XMLObjectifier.xmlToJSON(transport.responseXML);
+
+                    this.serviceSelect.addEntries([{label: service.name, value: serviceJson}]);
+                    
+                    //Add the configuration to the list of configurations
+                    this.serviceConfigurationList[service.name] = configuration;
+
+                    //Set this as the current service
+                    if(selected)
+                        this.setWfsService(service);
+
+                    //Tell everything is ok and save the services list (persistent list)
+                    this.showMessage(_("Se ha recibido un nuevo servidor."));
+                    this.save();
+                    
+                }.bind(this),
+                onFailure: function(transport) {
+                    this.showMessage(_("Error al cargar la configuración del servicio"));
+                }.bind(this)
+            });
         }
         
-        return false;
+    },
+    
+    /*
+     * This function changes the current service.
+     */
+    setWfsService: function(service){
+        this.serviceSelect.setValue(JSON.stringify(service));
+        
+        //Parse the XML configuration to an object
+        this.serviceConfiguration = this.serviceConfigurationList[service.name];
+
+        //Set the search options list
+        this.propertySelect.clear();
+        var searchOptions = this.serviceConfiguration.request[0].search[0].option;
+        for(var x = 0; x < searchOptions.length; x++){
+            var propertyName = searchOptions[x].Text;
+            var label = searchOptions[x].label;
+            this.propertySelect.addEntries([{label: _(label), value: propertyName}]);
+        }
     },
 
     /*
@@ -145,10 +196,16 @@ conwet.Gadget = Class.create({
         this.servicesPreference.set(JSON.stringify(services));
     },
 
+    /*
+     * This functions sends an event with the location.
+     */
     sendLocation: function(lon, lat) {
         this.locationEvent.send(lon + "," + lat);
     },
 
+    /*
+     * This function sends and event with the location info
+     */
     sendLocationInfo: function(lon, lat, title) {
         this.locationInfoEvent.send(JSON.stringify({
             "position": {
@@ -167,7 +224,7 @@ conwet.Gadget = Class.create({
         this.searchTextEvent.send(text);
     },
 
-    _sendSearchRequest: function (service, word) {
+    _sendSearchRequest: function (service, word, property) {
         this.clearUI();
 
         var baseURL = service.url;
@@ -196,9 +253,9 @@ conwet.Gadget = Class.create({
             "VERSION": "1.1.0",
             "REQUEST": "GetFeature",
             "MAXFEATURES": "100",
-            "NAMESPACE": "xmlns(mne=http://www.idee.es/mne)",
-            "TYPENAME": "mne:Entidad",
-            "FILTER": '<Filter xmlns:mne="http://www.idee.es/mne"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>mne:nombreEntidad/mne:NombreEntidad/mne:nombre</PropertyName><Literal>*'+word+'*</Literal></PropertyIsLike></Filter>'
+            "NAMESPACE": this.serviceConfiguration.request[0].namespace[0].Text,
+            "TYPENAME": this.serviceConfiguration.request[0].typename[0].Text,
+            "FILTER": this.serviceConfiguration.request[0].filter[0].Text.replace("{{word}}", word).replace("{{property}}", property)
         };
         
         //http://www.cartociudad.es/wfs-codigo/services?&SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&MAXFEATURES=100&NAMESPACE=xmlns(app=http://www.deegree.org/app)&TYPENAME=app:Entidad&FILTER=<Filter xmlns:app="http://www.deegree.org/app"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>nombreEntidad_nombre</PropertyName><Literal>*28035*</Literal></PropertyIsLike></Filter>
@@ -211,11 +268,8 @@ conwet.Gadget = Class.create({
             parameters: parameters,
             onSuccess: function(transport) {
                 this.hideMessage();
-                //var obj = format.read(transport.responseText); //DEBUG
-                var oParser = new DOMParser();
-                var oDOM = oParser.parseFromString(transport.responseText, "text/xml");
-                //this._drawEntities(eval(transport.responseText), lowerIndex , upperIndex);
-                this._drawEntities(oDOM, lowerIndex , upperIndex);
+                var xmlObject = XMLObjectifier.xmlToJSON(XMLObjectifier.textToXML(transport.responseText));
+                this._drawEntities(xmlObject);
             }.bind(this),
             onFailure: function(){
                 this.showError("El servidor no responde.");
@@ -223,18 +277,32 @@ conwet.Gadget = Class.create({
         });
     },
 
-    _drawEntities: function(oDOM, lowerIndex , upperIndex) {
+    /**
+     * This functions shows a list of the results of the search done.
+     */
+    _drawEntities: function(xmlObject) {
         this.clearUI();
-
-        var nEntities = oDOM.documentElement.getAttribute("numberOfFeatures");
         
-        if(nEntities < 2)
+        //Get the features typename (without the prefix)
+        var configTypename = this.serviceConfiguration.request[0].typename[0].Text;
+        var pos = configTypename.indexOf(":");
+        var typename;
+        if(pos >= 0)
+            typename = configTypename.substring(pos+1);
+        
+        else
+            typename = configTypename;
+        
+        
+        
+        var entities = xmlObject.featureMember;
+        var nEntities = entities.length;
+        
+        if(nEntities < 1)
             return;
         
-        var entities = oDOM.documentElement.children;
-
-        for (var i=1; i<nEntities; i++) {
-            var entity = entities[i].getElementsByTagName("mne:Entidad")[0];
+        for (var i=0; i<nEntities; i++) {
+            var entity = entities[i][typename][0];
 
             var div = document.createElement("div");
             $(div).addClassName("feature");
@@ -247,9 +315,11 @@ conwet.Gadget = Class.create({
                 "self"  : this
             };
 
+            var showInfo = this.serviceConfiguration.results[0].displayInfo;
+            
             div.title = "Send event";
             div.observe("click", function(e) {
-                this.self.sendText(this.entity.getElementsByTagName("mne:nombreEntidad")[0].getElementsByTagName("mne:nombre")[0].innerHTML);
+                this.self.sendText(this.self._getDOMValue(this.entity, showInfo[0]));
                 this.self._showDetails(this.entity);
                 //this.self._selectFeature(this.feature, this.div);
             }.bind(context));
@@ -259,16 +329,32 @@ conwet.Gadget = Class.create({
             div.observe("mouseout", function(e) {
                 this.div.removeClassName("highlight");
             }.bind(context), false);
-
-            var title = document.createElement("span");
-            $(title).addClassName("title");
-            title.innerHTML = entity.getElementsByTagName("mne:nombreEntidad")[0].getElementsByTagName("mne:nombre")[0].innerHTML;
-            div.appendChild(title);
-
-            var type = document.createElement("span");
-            $(type).addClassName("type");
-            type.innerHTML = " (" +entity.getElementsByTagName("mne:tipoEntidad")[0].getElementsByTagName("mne:tipo")[0].innerHTML + ")";
-            div.appendChild(type);
+            
+            //Load the separator character from the service configuration file
+            var separator = this.serviceConfiguration.results[0].separator;
+            if(separator == null)
+                separator = " ";
+            
+            var span = document.createElement("span");
+            
+            for(var x = 0; x < showInfo.length; x++){
+                
+                //Add the separator between fields
+                if(span.innerHTML != null)
+                    span.innerHTML += separator;
+                
+                //If a headchar is defined, add it before the field.
+                if(showInfo[x].headChar != null)
+                    span.innerHTML += showInfo[x].headChar;
+                
+                //Add the field text
+                span.innerHTML += this._getDOMValue(entity, showInfo[x]);
+                
+                //If a trailChar is defined, add it after the field
+                if(showInfo[x].trailChar != null)
+                    span.innerHTML += showInfo[x].trailChar;
+            }
+            div.appendChild(span);
 
             $("list").appendChild(div);
         }
@@ -287,18 +373,19 @@ conwet.Gadget = Class.create({
         }
     },
 
+    /*
+     * Displays more info about the selected entry in the list of features.
+     */
     _showDetails: function(entity) {
-        $("info").innerHTML = ""; //this._decodeASCII(json[1].metadataHTML);
+        $("info").innerHTML = ""; 
         $("info").appendChild(this._entityToHtml(entity));
-
-        var srs      = entity.getElementsByTagName("mne:posicionEspacial")[0].getElementsByTagName("gml:Point")[0].getAttribute("srsName");
-        var location = entity.getElementsByTagName("mne:posicionEspacial")[0].getElementsByTagName("gml:Point")[0].getElementsByTagName("gml:pos")[0].innerHTML.split(" ", 2);
-        if (!location || (location == "")) {
-            var sections = $("info").getElementsByClassName("section5v");
-            if (sections.length > 0) {
-                location = $("info").getElementsByClassName("section5v")[0].innerHTML.split(" ", 2);
-            }
-        }
+        
+        var srsConfig = this.serviceConfiguration.results[0].srs[0];
+        var srs      = this._getDOMValue(entity, srsConfig);
+        var locationConfig = this.serviceConfiguration.results[0].location[0];
+        var location = this._getDOMValue(entity, locationConfig).split(" ", 2);
+        var locationInfoConfig = this.serviceConfiguration.results[0].locationInfo[0];
+        var locationInfo = this._getDOMValue(entity, locationInfoConfig);
 
         location = new OpenLayers.LonLat(location[0], location[1]);
         if (srs && (srs != "")) {
@@ -307,129 +394,36 @@ conwet.Gadget = Class.create({
 
         //Send the location and location info (location + name)
         this.sendLocation(location.lon, location.lat);
-        this.sendLocationInfo(location.lon, location.lat, entity.getElementsByTagName("mne:nombreEntidad")[0].getElementsByTagName("mne:nombre")[0].innerHTML);
+        this.sendLocationInfo(location.lon, location.lat, locationInfo);
 
-        var sections = $("info").getElementsByClassName("section3v");
-        for (var i=0; i<sections.length; i++) {
-            $(sections[i]).observe("click", function(e) {
-                e.target.title = "Send event";
-                this.sendText(e.target.innerHTML);
-            }.bind(this));
-        }
-
-        sections = $("info").getElementsByClassName("section5v");
-        for (var i=0; i<sections.length; i++) {
-            $(sections[i]).observe("click", function(e) {
-                e.target.title = "Send event";
-                this.sendText(e.target.innerHTML);
-            }.bind(this));
-        }
     },
     
     /*
-     * This functions parses a feature DOM to an styled HTML
+     * This functions parses a feature object to an styled HTML
      */
     _entityToHtml: function(entity){
         var html = document.createElement("div");
-        html.className = "featureContainer"
+        html.className = "featureContainer";
         
-        var headDiv, fieldsDiv;
+        this._useDetailsLevels(entity, html, this.serviceConfiguration.details[0]);
         
-        //Info with the elements to show in the parsed html
-        var parseInfo = [
+        return html;
+       
+    },
             
-            { 
-                text : _("NombreEntidad"), 
-                fields : [{
-                    text : _("Nombre"),
-                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:nombre"
-                },
-                {
-                    text : _("Idioma"),
-                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:idioma"
-                },
-                {
-                    text : _("ClaseNombre"),
-                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:claseNombre"
-                },
-                {
-                    text : _("Estatus"),
-                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:estatus"
-                },
-                {
-                    text : _("Fuente"),
-                    path : "mne:nombreEntidad/mne:NombreEntidad/mne:fuente"
-                }
-                ]
-            },
-            { 
-                text : _("TipoEntidad"), 
-                fields : [{
-                    text : _("Tipo"),
-                    path : "mne:tipoEntidad/mne:TipoEntidad/mne:tipo"
-                },
-                {
-                    text : _("CatalogoEntidades"),
-                    path : "mne:tipoEntidad/mne:TipoEntidad/mne:catalogoEntidades"
-                }
-                ]
-            },
-            { 
-                text : _("PosicionEspacial"), 
-                fields : [{
-                    text : _("Posicion"),
-                    path : "mne:posicionEspacial/mne:PosicionEspacial/mne:geometria/gml:Point/gml:pos"
-                },
-                {
-                    text : _("SRS"),
-                    path : "mne:posicionEspacial/mne:PosicionEspacial/mne:geometria/gml:Point",
-                    attribute : "srsName"
-                }
-                ]
-            },
-            { 
-                text : _("EntidadLocal"), 
-                fields : [{
-                    text : _("ComunidadAutonoma"),
-                    path : "mne:entidadLocal/mne:EntidadLocal/mne:comunidadAutonoma"
-                },
-                {
-                    text : _("Provincia"),
-                    path : "mne:entidadLocal/mne:EntidadLocal/mne:provincia"
-                }
-                ]
-            },
-            { 
-                text : _("Codificacion"), 
-                fields : [{
-                    text : _("Codigo"),
-                    path : "mne:codificacion/mne:Codificacion/mne:codigo"
-                },
-                {
-                    text : _("SistemaCodificacion"),
-                    path : "mne:codificacion/mne:Codificacion/mne:sistemaCodificacion"
-                }
-                ]
-            },
-            { 
-                text : _("Mapa"), 
-                fields : [{
-                    text : _("Serie"),
-                    path : "mne:mapa/mne:Mapa/mne:serie"
-                },
-                {
-                    text : _("Hoja"),
-                    path : "mne:mapa/mne:Mapa/mne:hoja"
-                }
-                ]
-            }            
-        ]; 
-        
-        
+    /*
+     * This function uses the given config (detailslevel) to extract the info
+     * from the entity and display it in the parentDiv.
+     */
+    _useDetailsLevels: function(entity, parentDiv, config){
+
+    var headDiv, fieldsDiv;
+                
+        var parseInfo = config.detailslevel;
         //Iterate through sections
         for(var x = 0; x < parseInfo.length; x++){
             
-            var head = parseInfo[x].text;
+            var head = parseInfo[x].label[0].Text;
             
             headDiv = document.createElement("div");
             fieldsDiv = document.createElement("div");
@@ -438,62 +432,57 @@ conwet.Gadget = Class.create({
             fieldsDiv.className = "featureFieldsContainer";
             
             headDiv.innerHTML = head;
-            var fields = parseInfo[x].fields;
             
-            //Iterate through section fields
-            for(var y = 0; y < fields.length; y++){
-                
-                var field = fields[y];
-                
-                var entryValue = this._getDOMValue(entity, field.path, field.attribute);
-                
-                //Create something like:
-                // <div class="field"><div class="fieldName"></div><div class="fieldValue"></div></div>
-                if(entryValue != null){
-                    var fieldDiv = document.createElement("div");
-                    var nameDiv = document.createElement("div");
-                    var valueDiv = document.createElement("div");
-                    
-                    fieldDiv.className = "fieldContainer";
-                    nameDiv.className = "fieldName";
-                    nameDiv.innerHTML = field.text;
-                    valueDiv.className = "fieldValue";
-                    valueDiv.innerHTML = entryValue;
-                    
-                    fieldDiv.appendChild(nameDiv);
-                    fieldDiv.appendChild(valueDiv);
-                    
-                    fieldsDiv.appendChild(fieldDiv);
-                }
+            var fieldDiv = document.createElement("div");
+            var valueDiv = document.createElement("div");
+            valueDiv.className = "fieldValue";
+            fieldDiv.className = "fieldContainer";
+            
+            if(parseInfo[x].path != null){
+                valueDiv.innerHTML = this._getDOMValue(entity, parseInfo[x].path[0]);
+                fieldsDiv.appendChild(valueDiv);
+            }else if(parseInfo[x].detailslevel != null){
+                this._useDetailsLevels(entity, fieldsDiv, parseInfo[x]);
             }
             
-            html.appendChild(headDiv);
-            html.appendChild(fieldsDiv);
-            
+            parentDiv.appendChild(headDiv);
+            parentDiv.appendChild(fieldsDiv);
         }
         
-        return html;
-       
     },
-    
     /*
      * This function get a DOM object and an element path and returns its value.
      * Is attribute is set, it return that attribute. Otherwise, returns the innerHTML.
-     */        
-    _getDOMValue: function(DOM, element, attribute){
+     */         
+    _getDOMValue: function(DOM, pathElement){
         try{
-            var path = element.split('/');
-            var temp = DOM;
-            for(var x =  0; x < path.length; x++){
-                var b = temp.getElementsByTagName(path[x]);
-                temp = b[0];
-                //temp = (temp.getElementsByTagName(path[subElement]))[0];
+            
+            if(pathElement.Text != null && pathElement.Text != ""){
+                var path = pathElement.Text.split('/');
+                var current = path[0];
+                var coincidences = DOM[current];
+                
+                var subPath;
+                if(path.length <= 1)
+                    subPath = "";
+                else{
+                    subPath = pathElement.Text.substring(pathElement.Text.indexOf("/")+1);
+                }
+                
+                for(var x = 0; x < coincidences.length; x++){
+                    var value = this._getDOMValue(coincidences[x], {Text: subPath, attribute: pathElement.attribute});
+                    if(value != null)
+                        return value;
+                }
+                
+            }else{
+                if(pathElement.attribute != null)
+                    return DOM[pathElement.attribute];
+                else
+                    return DOM.Text;   
             }
             
-            if(attribute != null)
-                return temp.getAttribute(attribute);
-            else
-                return temp.innerHTML;
+            return null;
             
         }catch(e){
             return null
