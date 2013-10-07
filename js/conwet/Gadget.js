@@ -151,7 +151,7 @@ conwet.Gadget = Class.create({
 
                     //Tell everything is ok and save the services list (persistent list)
                     this.showMessage(_("Se ha recibido un nuevo servidor."));
-                    this.save();
+                    this.save(service);
                     
                 }.bind(this),
                 onFailure: function(transport) {
@@ -194,18 +194,21 @@ conwet.Gadget = Class.create({
     /*
      * This function saves the service list
      */
-    save: function() {
-        var options = this.serviceSelect.optionValues;
+    save: function(service) {
         var services = [];
-        if(options != null){
-            for (var i=0; i<options.length; i++) {
-                var service = options[i].getValue();
-                if (service != "") {
-                    services.push(service);
-                }
-            }
+        if(this.servicesPreference.get() != "")
+            services = JSON.parse(this.servicesPreference.get());
+        
+        var found = false;
+        for(var i = 0; i < services.length; i++){
+            if(services[i].url == service.url)
+                found = true;
         }
-        this.servicesPreference.set(JSON.stringify(services));
+        
+        if(!found){
+            services.push(service);
+            this.servicesPreference.set(JSON.stringify(services));
+        }
     },
 
     /*
