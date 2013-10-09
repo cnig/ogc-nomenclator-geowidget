@@ -2,7 +2,7 @@
 
 <serviceConfig
     xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
-    xsi:noNamespaceSchemaLocation='file:/home/xafilox/Documentos/Desarrollo/ogc-nomenclator-geowidget/js/conwet/service-config/service_config.xsd'>
+    xsi:noNamespaceSchemaLocation='./js/conwet/service-config/service_config.xsd'>
     <request>
         <url>http://www.idee.es/IDEE-WFS-Nomenclator-NGC/services</url>
         <namespace>xmlns(mne=http://www.idee.es/mne)</namespace>

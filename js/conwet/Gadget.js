@@ -163,7 +163,7 @@ conwet.Gadget = Class.create({
     },
     
     /*
-     * This function changes the current service.
+     * This function changes the current service to the given service
      */
     setWfsService: function(service){
         this.serviceSelect.setValue(JSON.stringify(service));
@@ -192,7 +192,7 @@ conwet.Gadget = Class.create({
     },
 
     /*
-     * This function saves the service list
+     * This function saves the service in a persistent list.
      */
     save: function(service) {
         var services = [];

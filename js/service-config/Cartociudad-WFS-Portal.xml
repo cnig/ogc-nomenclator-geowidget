@@ -2,7 +2,7 @@
 
 <serviceConfig
     xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
-    xsi:noNamespaceSchemaLocation='file:/home/xafilox/Documentos/Desarrollo/ogc-nomenclator-geowidget/js/conwet/service-config/service_config.xsd'>
+    xsi:noNamespaceSchemaLocation='./js/conwet/service-config/service_config.xsd'>
     <request>
         <url>http://www.cartociudad.es/wfs-portal/services</url>
         <namespace>xmlns(app=http://www.deegree.org/app)</namespace>
