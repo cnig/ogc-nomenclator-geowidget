@@ -222,13 +222,11 @@ conwet.Gadget = Class.create({
      * This function sends and event with the location info
      */
     sendLocationInfo: function(lon, lat, title) {
-        this.locationInfoEvent.send(JSON.stringify({
-            "position": {
-                "lon": lon,
-                "lat": lat
-            },
+        this.locationInfoEvent.send(JSON.stringify([{
+            "lon": lon,
+            "lat": lat,
             "title": title
-        }));
+        }]));
     },
 
     sendText: function(text) {
