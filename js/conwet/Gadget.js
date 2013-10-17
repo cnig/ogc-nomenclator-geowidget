@@ -183,7 +183,7 @@ conwet.Gadget = Class.create({
         }catch(e){};
         
         //Create the controller
-        if(service.service_type == 'MNE' || service.service_type == 'EGN')
+        if(service.service_type == 'MNE' || service.service_type == 'EGN' || service.service_type == 'INSPIRE')
             this.controller = new conwet.WFSController(this);
         else if(service.service_type == 'GEONAMES')
             this.controller = new conwet.GeoNamesController(this);

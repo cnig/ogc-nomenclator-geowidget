@@ -6,6 +6,7 @@
     <request>
         <url>http://www.cartociudad.es/wfs-distrito/services</url>
         <namespace>xmlns(app=http://www.deegree.org/app)</namespace>
+        <version>1.1.0</version>
         <typename>app:Entidad</typename>
         <filter><![CDATA[<Filter xmlns:app="http://www.deegree.org/app"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>{{property}}</PropertyName><Literal>*{{word}}*</Literal></PropertyIsLike></Filter>]]></filter>
         <search>

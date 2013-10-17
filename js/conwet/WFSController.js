@@ -46,22 +46,32 @@ conwet.WFSController = Class.create({
                 baseURL = baseURL.slice(0, -1);
             }
         }
-
- 	//var format = new OpenLayers.Format.CSWGetFeatures();	 
-        //var result = format.write(options);
-        //var peticion = 'http://www.idee.es/IDEE-WFS-Nomenclator-NGC/services';
-        var parameters = {
-            "SERVICE": "WFS",
-            "VERSION": "1.1.0",
-            "REQUEST": "GetFeature",
-            "MAXFEATURES": "100",
-            "NAMESPACE": this.gadget.serviceConfiguration.request[0].namespace[0].Text,
-            "TYPENAME": this.gadget.serviceConfiguration.request[0].typename[0].Text,
-            "FILTER": this.gadget.serviceConfiguration.request[0].filter[0].Text.replace("{{word}}", word).replace("{{property}}", property)
-        };
-        
-        //http://www.cartociudad.es/wfs-codigo/services?&SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&MAXFEATURES=100&NAMESPACE=xmlns(app=http://www.deegree.org/app)&TYPENAME=app:Entidad&FILTER=<Filter xmlns:app="http://www.deegree.org/app"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>nombreEntidad_nombre</PropertyName><Literal>*28035*</Literal></PropertyIsLike></Filter>
-
+        var parameter = null;
+        if(this._getWFSVersion() === "1.1.0"){
+            parameters = {
+                "SERVICE": "WFS",
+                "VERSION": "1.1.0",
+                "REQUEST": "GetFeature",
+                "MAXFEATURES": "100",
+                "NAMESPACE": this.gadget.serviceConfiguration.request[0].namespace[0].Text,
+                "TYPENAME": this.gadget.serviceConfiguration.request[0].typename[0].Text,
+                "FILTER": this.gadget.serviceConfiguration.request[0].filter[0].Text.replace("{{word}}", word).replace("{{property}}", property)
+            };
+        }else if(this._getWFSVersion() === "2.0.0"){
+            parameters = {
+                "SERVICE": "WFS",
+                "VERSION": "2.0.0",
+                "REQUEST": "GetFeature",
+                "COUNT": "100",
+                "NAMESPACE": this.gadget.serviceConfiguration.request[0].namespace[0].Text,
+                "TYPENAME": this.gadget.serviceConfiguration.request[0].typename[0].Text,
+                "FILTER": this.gadget.serviceConfiguration.request[0].filter[0].Text.replace("{{word}}", word).replace("{{property}}", property)
+            };
+        }else{
+            this.gadget.showMessage(_("No hay soporte para esta versión del servicio."));
+            return;
+        }
+       
 
         this.gadget.showMessage("Solicitando datos al servidor.", true);
         //TODO Gif chulo para esperar
@@ -96,8 +106,11 @@ conwet.WFSController = Class.create({
             typename = configTypename;
         
         
-        
-        var entities = xmlObject.featureMember;
+        var entities;
+        if(this._getWFSVersion() === "2.0.0")
+            entities = xmlObject.member;
+        else
+            entities = xmlObject.featureMember;
         var nEntities = entities.length;
         
         if(nEntities < 1)
@@ -278,8 +291,10 @@ conwet.WFSController = Class.create({
             return null;
         };
 
+    },
+            
+    _getWFSVersion: function(){
+        return this.gadget.serviceConfiguration.request[0].version[0].Text;
     }
-
-    
     
 });
