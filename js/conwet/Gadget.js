@@ -35,6 +35,7 @@ conwet.Gadget = Class.create({
         
         this.controller = new conwet.WFSController(this);
 
+        //TODO: varios valores
         this.searchTextSlot    = new conwet.events.Slot('search_text_slot', function(text) {
             this.searchInput.value = text;
             this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value, this.propertySelect.getValue());
@@ -70,9 +71,11 @@ conwet.Gadget = Class.create({
         header.appendChild(serviceLabel);
 
         //Service selector
-        this.serviceSelect = new StyledElements.StyledSelect({"onChange": function(){
+        this.serviceSelect = new StyledElements.StyledSelect();
+        this.serviceSelect.addEventListener("change", function(){
+            if(this.serviceSelect.getValue() != "")
                 this.setWfsService(JSON.parse(this.serviceSelect.getValue()));
-        }});
+        }.bind(this));
         this.serviceSelect.addClassName("service");
         this.serviceSelect.textDiv.hide();
         this.serviceSelect.insertInto(header);
@@ -86,43 +89,79 @@ conwet.Gadget = Class.create({
                 this.addWfsService(services[i], i==0);
             }
         }
-
-        var searchLabel = document.createElement("div");
-        $(searchLabel).addClassName("label");
-        searchLabel.appendChild(document.createTextNode(_("Topónimo:")));
-        header.appendChild(searchLabel);
-
-        //Select with the properties that can be used to search in this service
-        this.propertySelect = new StyledElements.StyledSelect({"onChange": function(){}});
-        this.propertySelect.textDiv.hide();
-        //this.propertySelect.addClassName("search"); TEMPORAL!!
-        this.propertySelect.addClassName("hidden"); //TEMPORAL!!
-        this.propertySelect.addEntries([{label: _('Search by'), value: ''}]);
-        this.propertySelect.insertInto(header);
         
-        //$(this.propertySelect).hide(); //Temporal
-        
-        var searchDiv = document.createElement("div");
-        $(searchDiv).addClassName("search");
-        header.appendChild(searchDiv);
-        
-        //Text input containing the text to be searched
-        this.searchInput = document.createElement("input");
-        this.searchInput.type = "text";
-        $(this.searchInput).addClassName("search");
-        searchDiv.appendChild(this.searchInput);
+        //Draw all the search options
+        var searchOptionsContainer = document.createElement("div");
+        $(searchOptionsContainer).addClassName("searchOptions");
+        header.appendChild(searchOptionsContainer);
+        this.drawSearchOptions();
+       
+    },
+    
+    drawSearchOptions: function(){
 
-        var searchButton = conwet.ui.UIUtils.createButton({
-            "classNames": ["search_button"],
-            "title"     : _("Buscar topónimo"),
-            "value"     : _("Buscar"),
-            "onClick"   : function(e) {
-                this.sendSearch(this.searchInput.value);
-                this.controller._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value, this.propertySelect.getValue()).bind(this);
-            }.bind(this)
-        });
-        header.appendChild(searchButton);
+        var content = $$(".searchOptions")[0].childElements();
+        if(content != null){
+            content.each(function(element){
+                element.remove();
+            });
+        }
+        
+        if(this.serviceConfiguration != null){
+            var searchOptions = this.serviceConfiguration.request[0].search[0].option;
+            for(var x = 0; x < searchOptions.length; x++){
 
+                var searchOption = searchOptions[x];
+
+                var searchLabel = document.createElement("div");
+                $(searchLabel).addClassName("label");
+                searchLabel.appendChild(document.createTextNode(_(searchOption.label)));
+                $$(".searchOptions")[0].appendChild(searchLabel);
+
+                /* Por ahora no permito que haya búsquedas con parámetros opcionales
+                //Select with the properties that can be used to search in this service
+                this.propertySelect = new StyledElements.StyledSelect({"onChange": function(){}});
+                this.propertySelect.textDiv.hide();
+                //this.propertySelect.addClassName("search"); TEMPORAL!!
+                this.propertySelect.addClassName("hidden"); //TEMPORAL!!
+                this.propertySelect.addEntries([{label: _('Search by'), value: ''}]);
+                this.propertySelect.insertInto($$(".searchOptions")[0]);
+
+                */
+
+                //$(this.propertySelect).hide(); //Temporal
+
+                var searchDiv = document.createElement("div");
+                $(searchDiv).addClassName("search");
+                $$(".searchOptions")[0].appendChild(searchDiv);
+
+                //Text input containing the text to be searched
+                var searchInput = document.createElement("input");
+                searchInput.type = "text";
+                searchInput.id = searchOption.id;
+                $(searchInput).addClassName("search");
+                $(searchInput).setAttribute("data-property", searchOption.Text);
+                searchDiv.appendChild(searchInput);
+                
+                
+            }
+            
+            var searchButton = conwet.ui.UIUtils.createButton({
+                "classNames": ["search_button"],
+                "title"     : _("Buscar topónimo"),
+                "value"     : _("Buscar"),
+                "onClick"   : function(e) {
+                    var inputs = $$("input.search");
+                    var sendValues = [];
+                    for(var x = 0; x < inputs.length; x++){
+                        sendValues.push(inputs[x].getValue());
+                    }
+                    this.sendSearch(JSON.stringify(sendValues));
+                    this.controller._sendSearchRequest(JSON.parse(this.serviceSelect.getValue())).bind(this);
+                }.bind(this)
+            });
+            $$(".searchOptions")[0].appendChild(searchButton);
+        }
     },
 
     /*
@@ -170,7 +209,8 @@ conwet.Gadget = Class.create({
         
         //Parse the XML configuration to an object
         this.serviceConfiguration = this.serviceConfigurationList[service.name];
-
+        
+        /* Por ahora no permito busquedas opcionales
         //Set the search options list
         this.propertySelect.clear();
         try{
@@ -181,14 +221,16 @@ conwet.Gadget = Class.create({
                 this.propertySelect.addEntries([{label: _(label), value: propertyName}]);
             }
         }catch(e){};
+        */
         
         //Create the controller
         if(service.service_type == 'MNE' || service.service_type == 'EGN' || service.service_type == 'INSPIRE')
             this.controller = new conwet.WFSController(this);
-        else if(service.service_type == 'GEONAMES')
-            this.controller = new conwet.GeoNamesController(this);
         else
             this.showMessage(_("Tipo de servicio desconocido"));
+        
+        //Redraw the search options available for this service
+        this.drawSearchOptions();
     },
 
     /*

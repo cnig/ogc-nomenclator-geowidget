@@ -29,12 +29,12 @@ conwet.WFSController = Class.create({
         this.gadget = gadget;
     },
     
-    _sendSearchRequest: function (service, word, property) {
+    _sendSearchRequest: function (service) {
         this.gadget.clearUI();
 
         var baseURL = service.url;
 
-        if ((baseURL == "") || (word == "")) {
+        if ((baseURL == "")) {
             this.gadget.showMessage(_("Faltan datos en el formulario."));
             return;
         }
@@ -46,32 +46,48 @@ conwet.WFSController = Class.create({
                 baseURL = baseURL.slice(0, -1);
             }
         }
-        var parameter = null;
+        
+        var parameters = null;
+        var inputs = $$("input.search");
+        var request = this.gadget.serviceConfiguration.request[0];
         if(this._getWFSVersion() === "1.1.0"){
             parameters = {
                 "SERVICE": "WFS",
                 "VERSION": "1.1.0",
                 "REQUEST": "GetFeature",
-                "MAXFEATURES": "100",
-                "NAMESPACE": this.gadget.serviceConfiguration.request[0].namespace[0].Text,
-                "TYPENAME": this.gadget.serviceConfiguration.request[0].typename[0].Text,
-                "FILTER": this.gadget.serviceConfiguration.request[0].filter[0].Text.replace("{{word}}", word).replace("{{property}}", property)
+                "MAXFEATURES": "100"
             };
         }else if(this._getWFSVersion() === "2.0.0"){
             parameters = {
                 "SERVICE": "WFS",
                 "VERSION": "2.0.0",
                 "REQUEST": "GetFeature",
-                "COUNT": "100",
-                "NAMESPACE": this.gadget.serviceConfiguration.request[0].namespace[0].Text,
-                "TYPENAME": this.gadget.serviceConfiguration.request[0].typename[0].Text,
-                "FILTER": this.gadget.serviceConfiguration.request[0].filter[0].Text.replace("{{word}}", word).replace("{{property}}", property)
+                "COUNT": "100"
             };
         }else{
             this.gadget.showMessage(_("No hay soporte para esta versión del servicio."));
             return;
         }
-       
+        
+        //Typename is optional (could be using a stored query)
+        if(this.gadget.serviceConfiguration.request[0].namespace != null)
+            parameters["TYPENAME"] = this._replaceWithOptionsData(request.typename[0].Text);
+        
+        //Namespace is optional
+        if(this.gadget.serviceConfiguration.request[0].namespace != null)
+            parameters["NAMESPACE"] = this._replaceWithOptionsData(request.namespace[0].Text);
+        
+        //Filter is optional
+        if(this.gadget.serviceConfiguration.request[0].namespace != null)
+            parameters["FILTER"] = this._replaceWithOptionsData(request.filter[0].Text);
+        
+        //Add extra params to the request
+        if(request.extraParam != null){
+            var extraParams = request.extraParam;
+            for(var x = 0; x < extraParams.length; x++){
+               parameters[extraParams[x].name] = this._replaceWithOptionsData(extraParams[x].Text);
+            }
+        }
 
         this.gadget.showMessage("Solicitando datos al servidor.", true);
         //TODO Gif chulo para esperar
@@ -88,9 +104,27 @@ conwet.WFSController = Class.create({
             }.bind(this)
         });
     },
+    
+    /**
+     * This function replaces the string with data related to the request.search.option
+     * entries in the configuration file. If the name of the option is found between {{}}
+     * it will be replaced with the value of the input text. If the name is preceded by
+     * "prop", it will be replaced with the text of that option in the configuration file
+     */
+    _replaceWithOptionsData: function(str){
+        var inputs = $$("input.search");
+        for(var x = 0; x < inputs.length; x++){
+            var id = inputs[x].id;
+            var value = inputs[x].getValue();
+            var property = inputs[x].readAttribute("data-property");
+            str = str.replace("{{"+id+"}}", value);
+            str = str.replace("{{prop_"+id+"}}", property);
+        }
+        return str;
+    },
 
     /**
-     * This functions shows a list of the results of the search done.
+     * This function shows a list of the results of the search done.
      */
     _drawEntities: function(xmlObject) {
         this.gadget.clearUI();
@@ -222,6 +256,11 @@ conwet.WFSController = Class.create({
     var headDiv, fieldsDiv;
                 
         var parseInfo = config.detailslevel;
+        
+        //Stop if it is not needed to display extra info
+        if(parseInfo == null)
+            return;
+        
         //Iterate through sections
         for(var x = 0; x < parseInfo.length; x++){
             
