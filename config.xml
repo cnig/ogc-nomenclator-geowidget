@@ -19,7 +19,6 @@
 
     <Platform.Wiring>
         <OutputEndpoint name="location_info_event" type="text" label="Location info" friendcode="location_info"/>
-        <OutputEndpoint name="location_event"      type="text" label="Location"      friendcode="location"/>
         <OutputEndpoint name="output_text_event"   type="text" label="Output Text"   friendcode="keyword"/>
         <OutputEndpoint name="search_text_event"   type="text" label="Search Text"   friendcode="keyword"/>
         <InputEndpoint  name="search_text_slot"    type="text" label="Search Text"   friendcode="keyword"/>

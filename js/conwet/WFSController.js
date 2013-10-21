@@ -222,14 +222,19 @@ conwet.WFSController = Class.create({
         var location = this._getDOMValue(entity, locationConfig).split(" ", 2);
         var locationInfoConfig = this.gadget.serviceConfiguration.results[0].locationInfo[0];
         var locationInfo = this._getDOMValue(entity, locationInfoConfig);
-
-        location = new OpenLayers.LonLat(location[0], location[1]);
+        
+        
+        //If is WFS 2.0.0 they give me lat/lon
+        if(this._getWFSVersion() === "2.0.0")
+            location = new OpenLayers.LonLat(location[1], location[0]);
+        else
+            location = new OpenLayers.LonLat(location[0], location[1]);
+        
         if (srs && (srs != "")) {
             location = this.gadget.transformer.advancedTransform(location, srs, this.gadget.transformer.DEFAULT.projCode);
         }
 
-        //Send the location and location info (location + name)
-        this.gadget.sendLocation(location.lon, location.lat);
+        //Send the location info (location + name)
         this.gadget.sendLocationInfo(location.lon, location.lat, locationInfo);
 
     },
