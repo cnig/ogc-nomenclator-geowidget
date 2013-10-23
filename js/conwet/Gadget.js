@@ -138,10 +138,13 @@ conwet.Gadget = Class.create({
                 var searchInput = document.createElement("input");
                 searchInput.type = "text";
                 searchInput.id = searchOption.id;
+                searchInput.onkeydown = function(k){
+                    if(k.keyCode == 13)
+                        this.launchSearch();
+                }.bind(this);
                 $(searchInput).addClassName("search");
                 $(searchInput).setAttribute("data-property", searchOption.Text);
                 searchDiv.appendChild(searchInput);
-                
                 
             }
             
@@ -149,18 +152,20 @@ conwet.Gadget = Class.create({
                 "classNames": ["search_button"],
                 "title"     : _("Buscar topónimo"),
                 "value"     : _("Buscar"),
-                "onClick"   : function(e) {
-                    var inputs = $$("input.search");
-                    var sendValues = [];
-                    for(var x = 0; x < inputs.length; x++){
-                        sendValues.push(inputs[x].getValue());
-                    }
-                    this.sendSearch(JSON.stringify(sendValues));
-                    this.controller._sendSearchRequest(JSON.parse(this.serviceSelect.getValue())).bind(this);
-                }.bind(this)
+                "onClick"   : this.launchSearch.bind(this)
             });
             $$(".searchOptions")[0].appendChild(searchButton);
         }
+    },
+    
+    launchSearch: function(){
+        var inputs = $$("input.search");
+        var sendValues = [];
+        for(var x = 0; x < inputs.length; x++){
+            sendValues.push(inputs[x].getValue());
+        }
+        this.sendSearch(JSON.stringify(sendValues));
+        this.controller._sendSearchRequest(JSON.parse(this.serviceSelect.getValue())).bind(this);
     },
 
     /*
