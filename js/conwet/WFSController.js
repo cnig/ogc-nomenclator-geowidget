@@ -48,7 +48,6 @@ conwet.WFSController = Class.create({
         }
         
         var parameters = null;
-        var inputs = $$("input.search");
         var request = this.gadget.serviceConfiguration.request[0];
         if(this._getWFSVersion() === "1.1.0"){
             parameters = {

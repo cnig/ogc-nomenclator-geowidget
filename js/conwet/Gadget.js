@@ -34,10 +34,25 @@ conwet.Gadget = Class.create({
         
         this.controller = new conwet.WFSController(this);
 
-        //TODO: varios valores
+        //Receive multiple values and search with them
         this.searchTextSlot    = new conwet.events.Slot('search_text_slot', function(text) {
-            this.searchInput.value = text;
-            this._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()), this.searchInput.value, this.propertySelect.getValue());
+            var data;
+            try{
+                data = JSON.parse(text);
+            }catch(e){
+                data = text;
+            }
+            var inputs = $$("input.search");
+            
+            if(inputs.length > 0){
+                if(typeof data == "string"){
+                    inputs[0].setValue(data);
+                }else if(data != null && data.length > 0){
+                    for(var x = 0; x < inputs.length && x < data.length; x++)
+                        inputs[x].setValue(data[x]);
+                }
+                this.launchSearch();
+            }
         }.bind(this));
 
         this.serviceConfiguration = null; //Contains the configuration of the service in use
@@ -158,6 +173,9 @@ conwet.Gadget = Class.create({
         }
     },
     
+    /**
+     * This function starts a new search
+     */
     launchSearch: function(){
         var inputs = $$("input.search");
         var sendValues = [];
@@ -165,7 +183,7 @@ conwet.Gadget = Class.create({
             sendValues.push(inputs[x].getValue());
         }
         this.sendSearch(JSON.stringify(sendValues));
-        this.controller._sendSearchRequest(JSON.parse(this.serviceSelect.getValue())).bind(this);
+        this.controller._sendSearchRequest(JSON.parse(this.serviceSelect.getValue()));
     },
 
     /*
@@ -262,9 +280,10 @@ conwet.Gadget = Class.create({
      */
     sendLocationInfo: function(lon, lat, title) {
         this.locationInfoEvent.send(JSON.stringify([{
-            "lon": lon,
-            "lat": lat,
-            "title": title
+            lon: lon,
+            lat: lat,
+            coordinates: lon + "," + lat,
+            title: title
         }]));
     },
 
