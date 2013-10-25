@@ -27,6 +27,13 @@ conwet.WFSController = Class.create({
     
     initialize: function(gadget){
         this.gadget = gadget;
+        this.parser = null;
+        var auto = this.gadget.serviceConfiguration.details[0]["auto"];
+        if(auto == null || auto == false){
+            this.parser = new conwet.parser.ConfigParser(gadget);
+        }else{
+            //TODO
+        }
     },
     
     _sendSearchRequest: function (service) {
@@ -167,7 +174,7 @@ conwet.WFSController = Class.create({
             
             div.title = "Send event";
             div.observe("click", function(e) {
-                this.self.gadget.sendText(this.self._getDOMValue(this.entity, showInfo[0]));
+                this.self.gadget.sendText(this.self.gadget.parseUtils.getDOMValue(this.entity, showInfo[0]));
                 this.self._showDetails(this.entity);
                 //this.self._selectFeature(this.feature, this.div);
             }.bind(context));
@@ -196,7 +203,7 @@ conwet.WFSController = Class.create({
                     span.innerHTML += showInfo[x].headChar;
                 
                 //Add the field text
-                span.innerHTML += this._getDOMValue(entity, showInfo[x]);
+                span.innerHTML += this.gadget.parseUtils.getDOMValue(entity, showInfo[x]);
                 
                 //If a trailChar is defined, add it after the field
                 if(showInfo[x].trailChar != null)
@@ -213,14 +220,14 @@ conwet.WFSController = Class.create({
      */
     _showDetails: function(entity) {
         $("info").innerHTML = ""; 
-        $("info").appendChild(this._entityToHtml(entity));
+        $("info").appendChild(this.parser._entityToHtml(entity));
         
         var srsConfig = this.gadget.serviceConfiguration.results[0].srs[0];
-        var srs      = this._getDOMValue(entity, srsConfig);
+        var srs      = this.gadget.parseUtils.getDOMValue(entity, srsConfig);
         var locationConfig = this.gadget.serviceConfiguration.results[0].location[0];
-        var location = this._getDOMValue(entity, locationConfig).split(" ", 2);
+        var location = this.gadget.parseUtils.getDOMValue(entity, locationConfig).split(" ", 2);
         var locationInfoConfig = this.gadget.serviceConfiguration.results[0].locationInfo[0];
-        var locationInfo = this._getDOMValue(entity, locationInfoConfig);
+        var locationInfo = this.gadget.parseUtils.getDOMValue(entity, locationInfoConfig);
         
         
         //If is WFS 2.0.0 they give me lat/lon
@@ -235,104 +242,6 @@ conwet.WFSController = Class.create({
 
         //Send the location info (location + name)
         this.gadget.sendLocationInfo(location.lon, location.lat, locationInfo);
-
-    },
-    
-    /*
-     * This functions parses a feature object to an styled HTML
-     */
-    _entityToHtml: function(entity){
-        var html = document.createElement("div");
-        html.className = "featureContainer";
-        
-        this._useDetailsLevels(entity, html, this.gadget.serviceConfiguration.details[0]);
-        
-        return html;
-       
-    },
-            
-    /*
-     * This function uses the given config (detailslevel) to extract the info
-     * from the entity and display it in the parentDiv.
-     */
-    _useDetailsLevels: function(entity, parentDiv, config){
-
-    var headDiv, fieldsDiv;
-                
-        var parseInfo = config.detailslevel;
-        
-        //Stop if it is not needed to display extra info
-        if(parseInfo == null)
-            return;
-        
-        //Iterate through sections
-        for(var x = 0; x < parseInfo.length; x++){
-            
-            var head = parseInfo[x].label[0].Text;
-            
-            headDiv = document.createElement("div");
-            fieldsDiv = document.createElement("div");
-            
-            headDiv.className = "featureHead";
-            fieldsDiv.className = "featureFieldsContainer";
-            
-            headDiv.innerHTML = head;
-            
-            var fieldDiv = document.createElement("div");
-            var valueDiv = document.createElement("div");
-            valueDiv.className = "fieldValue";
-            fieldDiv.className = "fieldContainer";
-            
-            if(parseInfo[x].path != null){
-                valueDiv.innerHTML = this._getDOMValue(entity, parseInfo[x].path[0]);
-                fieldsDiv.appendChild(valueDiv);
-            }else if(parseInfo[x].detailslevel != null){
-                this._useDetailsLevels(entity, fieldsDiv, parseInfo[x]);
-            }
-            
-            parentDiv.appendChild(headDiv);
-            parentDiv.appendChild(fieldsDiv);
-        }
-        
-    },
-            
-    /*
-     * This function get a DOM object and an element path and returns its value.
-     * Is attribute is set, it return that attribute. Otherwise, returns the innerHTML.
-     */         
-    _getDOMValue: function(DOM, pathElement){
-        try{
-            
-            if(pathElement.Text != null && pathElement.Text != ""){
-                var path = pathElement.Text.split('/');
-                var current = path[0];
-                var coincidences = DOM[current];
-                
-                var subPath;
-                if(path.length <= 1)
-                    subPath = "";
-                else{
-                    subPath = pathElement.Text.substring(pathElement.Text.indexOf("/")+1);
-                }
-                
-                for(var x = 0; x < coincidences.length; x++){
-                    var value = this._getDOMValue(coincidences[x], {Text: subPath, attribute: pathElement.attribute});
-                    if(value != null)
-                        return value;
-                }
-                
-            }else{
-                if(pathElement.attribute != null)
-                    return DOM[pathElement.attribute];
-                else
-                    return DOM.Text;   
-            }
-            
-            return null;
-            
-        }catch(e){
-            return null;
-        };
 
     },
             
