@@ -12,9 +12,11 @@ conwet.parser.ParseUtils = Class.create({
     },
     
     /*
-     * This function get a DOM object and an element path and returns its value.
-     * Is attribute is set, it return that attribute. Otherwise, returns the innerHTML.
-     */         
+     * This function gets a DOM object and an element path and returns its value.
+     * Is attribute is set in the config, it returns that attribute. Otherwise, returns the innerHTML.
+     * If both attribute and attributeValue are set, it returns the innerHTML of the element with the
+     * given attributeValue.
+     */              
     getDOMValue: function(DOM, pathElement){
         try{
             
@@ -31,14 +33,18 @@ conwet.parser.ParseUtils = Class.create({
                 }
                 
                 for(var x = 0; x < coincidences.length; x++){
-                    var value = this.getDOMValue(coincidences[x], {Text: subPath, attribute: pathElement.attribute});
+                    var value = this.getDOMValue(coincidences[x], {Text: subPath, attribute: pathElement.attribute, attributeValue: pathElement.attributeValue});
                     if(value != null)
                         return value;
                 }
                 
             }else{
-                if(pathElement.attribute != null)
-                    return DOM[pathElement.attribute];
+                if(pathElement.attribute != null && pathElement.attributeValue == null)
+                    return DOM[pathElement.attribute]; //Just want the value of the attribute
+                else if(pathElement.attribute != null && DOM[pathElement.attribute] == pathElement.attributeValue)
+                    return DOM.Text; //Coincidence with the value of the attribute
+                else if(pathElement.attribute != null) 
+                    return null; //No coincidence with the value of the attribute
                 else
                     return DOM.Text;   
             }

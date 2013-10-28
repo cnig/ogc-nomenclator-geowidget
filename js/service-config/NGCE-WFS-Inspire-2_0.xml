@@ -17,6 +17,7 @@
         <locationInfo>name/GeographicalName/spelling/SpellingOfName/text</locationInfo>
         <location>geometry/Point/pos</location>
         <srs attribute="srsName">geometry/Point</srs>
+        <outputText>name/GeographicalName/spelling/SpellingOfName/text</outputText>
         <displayInfo>name/GeographicalName/spelling/SpellingOfName/text</displayInfo>
         <displayInfo headChar="(" trailChar=")">localType/LocalisedCharacterString</displayInfo>
     </results>

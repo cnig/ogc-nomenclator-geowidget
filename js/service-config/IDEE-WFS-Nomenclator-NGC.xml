@@ -17,6 +17,7 @@
         <locationInfo>nombreEntidad/NombreEntidad/nombre</locationInfo>
         <location>posicionEspacial/PosicionEspacial/geometria/Point/pos</location>
         <srs attribute="srsName">posicionEspacial/PosicionEspacial/geometria/Point</srs>
+        <outputText>nombreEntidad/NombreEntidad/nombre</outputText>
         <displayInfo>nombreEntidad/NombreEntidad/nombre</displayInfo>
         <displayInfo headChar="(" trailChar=")">tipoEntidad/TipoEntidad/tipo</displayInfo>
     </results>

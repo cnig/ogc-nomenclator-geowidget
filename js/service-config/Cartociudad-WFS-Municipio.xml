@@ -17,6 +17,7 @@
         <locationInfo>nombreEntidad/nombre</locationInfo>
         <location>posicionEspacial/Point/pos</location>
         <srs attribute="srsName">posicionEspacial/boundedBy/Envelope</srs>
+        <outputText>nombreEntidad/nombre</outputText>
         <displayInfo>nombreEntidad/nombre</displayInfo>
         <displayInfo headChar="(" trailChar=")">tipoEntidad/tipo</displayInfo>
     </results>

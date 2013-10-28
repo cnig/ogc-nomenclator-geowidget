@@ -19,6 +19,7 @@
         <locationInfo>position/GeographicPosition/geometry/Point/pos</locationInfo>
         <location>position/GeographicPosition/geometry/Point/pos</location>
         <srs attribute="srsName">position/GeographicPosition/geometry/Point</srs>
+        <outputText>position/GeographicPosition/geometry/Point/pos</outputText>
         <displayInfo>position/GeographicPosition/geometry/Point/pos</displayInfo>
     </results>
     <details>

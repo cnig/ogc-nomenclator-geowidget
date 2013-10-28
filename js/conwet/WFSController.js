@@ -171,10 +171,11 @@ conwet.WFSController = Class.create({
             };
 
             var showInfo = this.gadget.serviceConfiguration.results[0].displayInfo;
+            var outputText = this.gadget.serviceConfiguration.results[0].outputText;
             
             div.title = "Send event";
             div.observe("click", function(e) {
-                this.self.gadget.sendText(this.self.gadget.parseUtils.getDOMValue(this.entity, showInfo[0]));
+                this.self.gadget.sendText(this.self.gadget.parseUtils.getDOMValue(this.entity, outputText[0]));
                 this.self._showDetails(this.entity);
                 //this.self._selectFeature(this.feature, this.div);
             }.bind(context));
