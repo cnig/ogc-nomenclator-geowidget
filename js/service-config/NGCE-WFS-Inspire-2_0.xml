@@ -8,7 +8,7 @@
         <namespace>xmlns(gn=urn:x-inspire:specification:gmlas:GeographicalNames:3.0)</namespace>
         <version>2.0.0</version>
         <typename>gn:NamedPlace</typename>
-        <filter><![CDATA[<fes:Filter xmlns:gn="urn:x-inspire:specification:gmlas:GeographicalNames:3.0"><fes:PropertyIsLike  wildCard="*" singleChar="?" escapeChar="!"><fes:ValueReference>{{prop_name}}</fes:ValueReference><fes:Literal>*{{name}}*</fes:Literal></fes:PropertyIsLike></fes:Filter>]]></filter>
+        <filter><![CDATA[<fes:Filter xmlns:gn="urn:x-inspire:specification:gmlas:GeographicalNames:3.0"><fes:PropertyIsLike matchCase="false" wildCard="*" singleChar="?" escapeChar="!"><fes:ValueReference>{{prop_name}}</fes:ValueReference><fes:Literal>*{{name}}*</fes:Literal></fes:PropertyIsLike></fes:Filter>]]></filter>
         <search>
             <option id="name" label="Nombre">/gn:NamedPlace/gn:name/gn:GeographicalName/gn:spelling/gn:SpellingOfName/gn:text</option>
         </search>

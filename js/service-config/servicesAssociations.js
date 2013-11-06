@@ -9,5 +9,5 @@ servicesAssociations["http://www.cartociudad.es/wfs-distrito/services"] = "js/se
 servicesAssociations["http://www.cartociudad.es/wfs-municipio/services"] = "js/service-config/Cartociudad-WFS-Municipio.xml";
 servicesAssociations["http://www.cartociudad.es/wfs-portal/services"] = "js/service-config/Cartociudad-WFS-Portal.xml";
 servicesAssociations["http://www.ign.es/wfs-inspire/ngce"] = "js/service-config/NGCE-WFS-Inspire-2_0.xml";
-servicesAssociations["http://www.cartociudad.es/wfs-inspire/ad"] = "js/service-config/Cartociudad-WFS-Inspire.xml";
+servicesAssociations["http://www.cartociudad.es/wfs-inspire/direcciones"] = "js/service-config/Cartociudad-WFS-Inspire.xml";
 

@@ -62,7 +62,14 @@ conwet.Gadget = Class.create({
             service = JSON.parse(service);
 
             if ((typeof service == 'object') && ('type' in service) && ('url' in service) && ('service_type' in service) && ('name' in service) && (service.type == "WFS") && (service.url != "")) {
-                this.addWfsService(service, true);
+                this.loadNewService(service, true);
+            }
+        }.bind(this));
+        
+        this.configSlot   = new conwet.events.Slot('config_slot', function(service) {
+            service = JSON.parse(service);
+            if ((typeof service == 'object') && ('type' in service) && ('url' in service) && ('service_type' in service) && ('name' in service) && (service.type == "WFS") && (service.url != "")) {
+                this.loadNewService(service, true);
             }
         }.bind(this));
 
@@ -102,7 +109,7 @@ conwet.Gadget = Class.create({
             var services = JSON.parse(this.servicesPreference.get());
 
             for (var i=0; i<services.length; i++) {
-                this.addWfsService(services[i], i==0);
+                this.loadNewService(services[i], i==0);
             }
         }
         
@@ -191,38 +198,50 @@ conwet.Gadget = Class.create({
     /*
      * This functions adds a WFS service to the select. If added, returns true, othrewise returns false.
      */
-    addWfsService: function(service, selected) {
+    loadNewService: function(service, selected) {
         var serviceJson = JSON.stringify(service);
         
         //Add it if it already isn't in the select
         if(!(serviceJson in this.serviceSelect.optionValues)){
-            //Load the configuration of the service
-            new Ajax.Request(servicesAssociations[service.url], {
-                method: 'GET',
-                onSuccess: function(transport) {
+            
+            if(service.xmlText != null){
+                var configuration = XMLObjectifier.xmlToJSON(XMLObjectifier.textToXML(service.xmlText));
+                this.addNewService(service, configuration, selected);
+            }else{
+                //Load the configuration of the service
+                new Ajax.Request(servicesAssociations[service.url], {
+                    method: 'GET',
+                    onSuccess: function(transport) {
 
-                    var configuration = XMLObjectifier.xmlToJSON(transport.responseXML);
+                        var configuration = XMLObjectifier.xmlToJSON(transport.responseXML);
 
-                    this.serviceSelect.addEntries([{label: service.name, value: serviceJson}]);
-                    
-                    //Add the configuration to the list of configurations
-                    this.serviceConfigurationList[service.name] = configuration;
+                        this.addNewService(service, configuration, selected);
 
-                    //Set this as the current service
-                    if(selected)
-                        this.setWfsService(service);
-
-                    //Tell everything is ok and save the services list (persistent list)
-                    this.showMessage(_("Se ha recibido un nuevo servidor."));
-                    this.save(service);
-                    
-                }.bind(this),
-                onFailure: function(transport) {
-                    this.showMessage(_("Error al cargar la configuración del servicio"));
-                }.bind(this)
-            });
+                    }.bind(this),
+                    onFailure: function(transport) {
+                        this.showMessage(_("Error al cargar la configuración del servicio"));
+                    }.bind(this)
+                });
+            }
         }
         
+    },
+    
+    addNewService: function(service, configuration, selected){
+        var serviceJson = JSON.stringify(service);
+        
+        this.serviceSelect.addEntries([{label: service.name, value: serviceJson}]);
+                    
+        //Add the configuration to the list of configurations
+        this.serviceConfigurationList[service.name] = configuration;
+
+        //Set this as the current service
+        if(selected)
+            this.setWfsService(service);
+
+        //Tell everything is ok and save the services list (persistent list)
+        this.showMessage(_("Se ha recibido un nuevo servidor."));
+        this.save(service);  
     },
     
     /*

@@ -23,6 +23,7 @@
         <OutputEndpoint name="search_text_event"   type="text" label="Search Text"   friendcode="keywords"/>
         <InputEndpoint  name="search_text_slot"    type="text" label="Search Text"   friendcode="keyword"/>
         <InputEndpoint  name="wfs_service_slot"    type="text" label="WFS info"      friendcode="service_info"/>
+        <InputEndpoint  name="config_slot"    type="text" label="Config"   friendcode="config"/>
     </Platform.Wiring>
 
     <Platform.Link>

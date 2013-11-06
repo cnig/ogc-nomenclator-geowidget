@@ -8,7 +8,7 @@
         <namespace>xmlns(app=http://www.deegree.org/app)</namespace>
         <version>1.1.0</version>
         <typename>app:Entidad</typename>
-        <filter><![CDATA[<Filter xmlns:app="http://www.deegree.org/app"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>{{prop_cod_post}}</PropertyName><Literal>{{cod_post}}</Literal></PropertyIsLike></Filter>]]></filter>
+        <filter><![CDATA[<Filter xmlns:app="http://www.deegree.org/app"><PropertyIsLike matchCase="false" wildCard="*" singleChar="?" escapeChar="!"><PropertyName>{{prop_cod_post}}</PropertyName><Literal>{{cod_post}}</Literal></PropertyIsLike></Filter>]]></filter>
         <search>
             <option id="cod_post" label="Codigo postal">nombreEntidad/nombre</option>
         </search>

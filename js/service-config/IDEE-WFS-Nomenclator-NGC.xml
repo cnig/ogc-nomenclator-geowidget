@@ -8,7 +8,7 @@
         <namespace>xmlns(mne=http://www.idee.es/mne)</namespace>
         <version>1.1.0</version>
         <typename>mne:Entidad</typename>
-        <filter><![CDATA[<Filter xmlns:mne="http://www.idee.es/mne"><PropertyIsLike wildCard="*" singleChar="?" escapeChar="!"><PropertyName>{{prop_name}}</PropertyName><Literal>*{{name}}*</Literal></PropertyIsLike></Filter>]]></filter>
+        <filter><![CDATA[<Filter xmlns:mne="http://www.idee.es/mne"><PropertyIsLike matchCase="false" wildCard="*" singleChar="?" escapeChar="!"><PropertyName>{{prop_name}}</PropertyName><Literal>*{{name}}*</Literal></PropertyIsLike></Filter>]]></filter>
         <search>
             <option id="name" label="Nombre">mne:nombreEntidad/mne:NombreEntidad/mne:nombre</option>
         </search>
