@@ -16,12 +16,24 @@
         </search>
     </request>
     <results>
-        <locationInfo>position/GeographicPosition/geometry/Point/pos</locationInfo>
+        <locationInfo>locator/AddressLocator/designator/LocatorDesignator/designator</locationInfo>
         <location>position/GeographicPosition/geometry/Point/pos</location>
         <srs attribute="srsName">position/GeographicPosition/geometry/Point</srs>
-        <outputText>position/GeographicPosition/geometry/Point/pos</outputText>
-        <displayInfo>position/GeographicPosition/geometry/Point/pos</displayInfo>
+        <outputText>locator/AddressLocator/designator/LocatorDesignator/designator</outputText>
+        <displayInfo headChar="Nº" >locator/AddressLocator/designator/LocatorDesignator/designator</displayInfo>
     </results>
     <details>
+        <detailslevel>
+            <label>Número</label>
+            <path>locator/AddressLocator/designator/LocatorDesignator/designator</path>
+        </detailslevel>
+        <detailslevel>
+            <label>Coordenadas</label>
+            <path>position/GeographicPosition/geometry/Point/pos</path>
+        </detailslevel>
+        <detailslevel>
+            <label>SRS</label>
+            <path attribute="srsName">position/GeographicPosition/geometry/Point</path>
+        </detailslevel>
     </details>
 </serviceConfig>

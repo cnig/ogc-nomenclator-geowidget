@@ -34,7 +34,20 @@ conwet.Gadget = Class.create({
         
         this.controller = null;
 
-        //Receive multiple values and search with them
+        // Attributes
+        this.messageManager = new conwet.ui.MessageManager(3000);
+        this.transformer    = new conwet.map.ProjectionTransformer();
+        
+        this.parseUtils = new conwet.parser.ParseUtils();
+        
+        this.serviceConfiguration = null; //Contains the configuration of the service in use
+        this.serviceConfigurationList = []; //Contains the configuration of all the services
+        
+        //Drwa the widget
+        this.servicesPreference = MashupPlatform.widget.getVariable("services");
+        this.draw();
+        
+        //Now, start listening for events in the slots
         this.searchTextSlot    = new conwet.events.Slot('search_text_slot', function(text) {
             var data;
             try{
@@ -54,9 +67,6 @@ conwet.Gadget = Class.create({
                 this.launchSearch();
             }
         }.bind(this));
-
-        this.serviceConfiguration = null; //Contains the configuration of the service in use
-        this.serviceConfigurationList = []; //Contains the configuration of all the services
         
         this.wfsServiceSlot   = new conwet.events.Slot('wfs_service_slot', function(service) {
             service = JSON.parse(service);
@@ -73,15 +83,9 @@ conwet.Gadget = Class.create({
             }
         }.bind(this));
 
-        this.servicesPreference = MashupPlatform.widget.getVariable("services");
         
-        // Attributes
-        this.messageManager = new conwet.ui.MessageManager(3000);
-        this.transformer    = new conwet.map.ProjectionTransformer();
-        
-        this.parseUtils = new conwet.parser.ParseUtils();
 
-        this.draw();
+        
     },
 
     draw: function() {
@@ -102,6 +106,12 @@ conwet.Gadget = Class.create({
         this.serviceSelect.addClassName("service");
         this.serviceSelect.textDiv.hide();
         this.serviceSelect.insertInto(header);
+        
+        //Draw all the search options
+        var searchOptionsContainer = document.createElement("div");
+        $(searchOptionsContainer).addClassName("searchOptions");
+        header.appendChild(searchOptionsContainer);
+        this.drawSearchOptions();
 
         this.serviceSelect.addEntries([{label: _('Select a server'), value: ''}]);
 
@@ -112,12 +122,6 @@ conwet.Gadget = Class.create({
                 this.loadNewService(services[i], i==0);
             }
         }
-        
-        //Draw all the search options
-        var searchOptionsContainer = document.createElement("div");
-        $(searchOptionsContainer).addClassName("searchOptions");
-        header.appendChild(searchOptionsContainer);
-        this.drawSearchOptions();
        
     },
     
