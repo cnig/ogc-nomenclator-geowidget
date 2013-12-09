@@ -96,7 +96,6 @@ conwet.Gadget = Class.create({
                 this.setWfsService(JSON.parse(this.serviceSelect.getValue()));
         }.bind(this));
         this.serviceSelect.addClassName("service");
-        this.serviceSelect.textDiv.hide();
         this.serviceSelect.insertInto(header);
         
         //Draw all the search options

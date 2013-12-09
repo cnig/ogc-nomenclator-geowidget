@@ -185,3 +185,6 @@ body {
 .featureAttributesContainer {
     margin-left: 4px;
 }
+.styled_select > div > .text {
+  display: none;
+}
