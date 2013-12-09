@@ -1,5 +1,8 @@
 /*
  *     Copyright (c) 2013 CoNWeT Lab., Universidad Politécnica de Madrid
+ *     Copyright (c) 2013 IGN - Instituto Geográfico general
+ *     Centro Nacional de Información Geográfica
+ *     http://www.ign.es/
  *
  *     This file is part of the GeoWidgets Project,
  *
