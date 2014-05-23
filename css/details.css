@@ -34,7 +34,7 @@ along with nomenclator Gadget. If not, see <http://www.gnu.org/licenses/>
 #info div {
 	font-family:Verdana, Arial, Helvetica, sans-serif;
 	font-size:11px;
-	color: #000033;
+	color: rgba(0,0,0,0.8);
 	padding:1px;
 }
 #info li {
