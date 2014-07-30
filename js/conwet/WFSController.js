@@ -45,7 +45,7 @@ conwet.WFSController = Class.create({
         var baseURL = service.url;
 
         if ((baseURL == "")) {
-            this.gadget.showMessage(_("Faltan datos en el formulario."));
+            this.gadget.showMessage(_("Missing data from the form."));
             return;
         }
 
@@ -74,7 +74,7 @@ conwet.WFSController = Class.create({
                 "COUNT": "100"
             };
         }else{
-            this.gadget.showMessage(_("No hay soporte para esta versión del servicio."));
+            this.gadget.showMessage(_("Service version not supported."));
             return;
         }
         
@@ -98,7 +98,7 @@ conwet.WFSController = Class.create({
             }
         }
 
-        this.gadget.showMessage("Solicitando datos al servidor.", true);
+        this.gadget.showMessage("Requesting data from server.", true);
         //TODO Gif chulo para esperar
         MashupPlatform.http.makeRequest(baseURL, {
             method: 'GET',
@@ -109,7 +109,7 @@ conwet.WFSController = Class.create({
                 this._drawEntities(xmlObject);
             }.bind(this),
             onFailure: function(){
-                this.gadget.showError("El servidor no responde.");
+                this.gadget.showError("Server not responding");
             }.bind(this)
         });
     },

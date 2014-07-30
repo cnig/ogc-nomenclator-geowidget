@@ -4,9 +4,9 @@
         <Vendor>CoNWeT</Vendor>
         <Name>ogc-nomenclator-geowidget</Name>
         <DisplayName>Nomenclator</DisplayName>
-        <Version>0.5.2</Version>
-        <Author>jmostazo</Author>
-        <Mail>jmostazo@fi.upm.es</Mail>
+        <Version>0.5.3</Version>
+        <Author>avera</Author>
+        <Mail>avera@conwet.com</Mail>
         <Description>This widget allows users to make place names searches by means of a nomenclator service list. It supports MNE and EGN-based nomenclator services.</Description>
         <ImageURI>img/nomenclator.png</ImageURI>
         <iPhoneImageURI>img/nomenclator.png</iPhoneImageURI>

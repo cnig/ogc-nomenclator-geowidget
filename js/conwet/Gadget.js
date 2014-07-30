@@ -89,7 +89,7 @@ conwet.Gadget = Class.create({
 
         var serviceLabel = document.createElement("div");
         $(serviceLabel).addClassName("label");
-        serviceLabel.appendChild(document.createTextNode(_("Servicio WFS:")));
+        serviceLabel.appendChild(document.createTextNode(_("WFS Service:")));
         header.appendChild(serviceLabel);
 
         //Service selector
@@ -172,8 +172,8 @@ conwet.Gadget = Class.create({
             
             var searchButton = conwet.ui.UIUtils.createButton({
                 "classNames": ["search_button"],
-                "title"     : _("Buscar topónimo"),
-                "value"     : _("Buscar"),
+                "title"     : _("Search"),
+                "value"     : _("Search"),
                 "onClick"   : this.launchSearch.bind(this)
             });
             $$(".searchOptions")[0].appendChild(searchButton);
@@ -222,7 +222,7 @@ conwet.Gadget = Class.create({
             this.setWfsService(service);
 
         //Tell everything is ok and save the services list (persistent list)
-        this.showMessage(_("Se ha recibido un nuevo servidor."));
+        this.showMessage(_("New server added."));
         this.save(service);  
     },
     
@@ -252,7 +252,7 @@ conwet.Gadget = Class.create({
         if(service.service_type == 'MNE' || service.service_type == 'EGN' || service.service_type == 'INSPIRE')
             this.controller = new conwet.WFSController(this);
         else
-            this.showMessage(_("Tipo de servicio desconocido"));
+            this.showMessage(_("Unknown service type."));
         
         //Redraw the search options available for this service
         this.drawSearchOptions();
